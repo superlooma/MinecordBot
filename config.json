@@ -1,0 +1,9 @@
+{
+    "discord_token": "",
+    "default_prefix": "$",
+    "minecraft_info": {
+        "username": "",
+        "password": "",
+        "host": ""
+    }
+}
