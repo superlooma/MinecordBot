@@ -2,8 +2,9 @@ import {Client as MinecraftClient, createClient, states} from 'minecraft-protoco
 import {Client as DiscordClient, Message, TextChannel, Snowflake} from 'discord.js';
 import {Config} from './config';
 import {Command, CommandContext, MinecraftCommandCaller, CommandCaller, DiscordCommandCaller} from './command';
-import { Optional, Some, None, get, read_file_sync_safe } from './util';
+import { Optional, Some, None, get, read_file_sync_safe, rand_range } from './util';
 import { readFileSync, fstat } from 'fs';
+import { deprecate } from 'util';
 
 export class Bot {
 	minecraft: MinecraftClient;
@@ -14,6 +15,7 @@ export class Bot {
 	private minecraft_prefix: string;
 	private server_prefixes: Map<string, string> = new Map();
 	private default_prefix: string;
+	private position: {x: number, y:number, z:number} = {x: 0, y: 0, z: 0};
 
 	constructor(config: Config) {
 		this.config = config;
@@ -29,17 +31,30 @@ export class Bot {
 			username: config.minecraft_info.username,
 			password: config.minecraft_info.password,
 			host: config.minecraft_info.host,
-			port: config.minecraft_info.port || 25565
+			port: config.minecraft_info.port || 25565,
+			version: '1.12.2'
 		});
 
-		this.discord.on('message', this.handle_discord_message);
+		this.discord.on('message', this.handle_discord_message.bind(this));
 		this.minecraft.on('chat', (packet: ChatPacket) => {
+			this.random_move();
+			this.minecraft.write('position', {x: this.position.x, y: this.position.y, z:this.position.z, onGround: false});
+			console.log(JSON.stringify(packet))
 			let msg: ChatJSON = JSON.parse(packet.message);
-			if((msg.translate == 'chat.type.announcement' || msg.translate == 'chat.type.text') && this.minecraft.username != msg.with[0].text) {
-				packet.message = msg.with[1].text;
-				this.handle_minecraft_message(packet);
-			}
+			if(!msg.extra) return;
+			if(msg.extra.length < 4) return;
+			packet.message = msg.extra[msg.extra.length-1].text;
+			this.handle_minecraft_message(packet, msg.extra[msg.extra.length-3].text);
 		});
+
+		this.minecraft.on('position', (packet) => {
+			let pos_packet = JSON.parse(packet);
+			this.position.x = pos_packet.x;
+			this.position.y = pos_packet.y;
+			this.position.z = pos_packet.z;
+		});
+
+		this.discord.login(config.discord_token);
 	}
 
 	private handle_discord_message(message:Message) {
@@ -70,7 +85,8 @@ export class Bot {
 			command.unwrap().run(ctx);
 	}
 
-	private async handle_minecraft_message(message: ChatPacket) {
+	private async handle_minecraft_message(message: ChatPacket, sender_name: string) {
+		console.log(message.message);
 		if(!message.message.startsWith(this.minecraft_prefix))
 			return;
 		message.message = message.message.substring(1);
@@ -78,12 +94,15 @@ export class Bot {
 
 		let args = this.parse_arguments(message.message);
 		let cmd_name = args.shift();
+		console.log(args)
+		console.log(cmd_name);
 		
 		// TODO: handle empty messages properly
 		if(!cmd_name)
 			return;
 
-		let sender_name = await this.get_minecraft_username(message.sender);
+		// let sender_name = await this.get_minecraft_username(message.sender);
+		console.log(sender_name)
 
 		let ctx: CommandContext = {
 			source: 'Minecraft',
@@ -99,7 +118,7 @@ export class Bot {
 
 	find_command(str: string): Optional<Command> {
 		if(this.commands.has(str))
-			return Some(<Command>this.commands.get(str));
+			return Some(<Command>this.commands.get(str.toLowerCase()));
 		else return None();
 	}
 
@@ -128,7 +147,23 @@ export class Bot {
 	}
 
 	add_command(command: Command) {
-		this.commands.set(command.getName(), command);
+		this.commands.set(command.get_name().toLowerCase(), command);
+	}
+
+	random_move() {
+		this.position.x += rand_range(-1, 1);
+		this.position.z += rand_range(-1, 1);
+	}
+
+	get_config(): Config {
+		return this.config;
+	}
+
+	/**
+	 * PLEASE DO NOT USE THIS OMG THIS IS REALLY DANGEROUS
+	 */
+	set_commands(cmd: Map<string, Command>) {
+		this.commands = cmd;
 	}
 }
 
@@ -140,5 +175,5 @@ interface ChatPacket {
 
 interface ChatJSON {
 	translate: string,
-	with: {text: string}[]
+	extra: {text: string}[]
 }

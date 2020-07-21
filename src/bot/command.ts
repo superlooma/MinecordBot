@@ -3,9 +3,9 @@ import {Client as MinecraftClient} from "minecraft-protocol";
 import { Bot } from './bot';
 
 export interface Command {
-	getName(): string;
-	getUsage(): string;
-	getDescription(): string;
+	get_name(): string;
+	get_usage(): string;
+	get_description(): string;
 	run(context: CommandContext): void;
 }
 
@@ -17,8 +17,8 @@ export interface CommandContext {
 }
 
 export interface CommandCaller {
-	sendMessage(message: string): void;
-	getName(): string;
+	send_message(message: string): void;
+	get_name(): string;
 }
 
 export class DiscordCommandCaller implements CommandCaller {
@@ -30,12 +30,16 @@ export class DiscordCommandCaller implements CommandCaller {
 		this.channel = channel;
 	}
 
-	sendMessage(message: string) {
+	send_message(message: string) {
 		this.channel.send(message);
 	}
 
-	getName(): string {
-		return `${this.user.username}#${this.user.discriminator}`;
+	get_name(): string {
+		return this.user.username;
+	}
+
+	get_discriminator(): string {
+		return this.user.discriminator;
 	}
 }
 
@@ -48,11 +52,12 @@ export class MinecraftCommandCaller implements CommandCaller {
 		this.client = client;
 	}
 
-	sendMessage(message: string) {
+	send_message(message: string) {
+		this.client.write('chat', {message: `${message}`});
 		this.client.write('chat', {message: `/w ${this.username} ${message}`});
 	}
 
-	getName(): string {
+	get_name(): string {
 		return this.username;
 	}
 }

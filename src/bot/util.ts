@@ -111,3 +111,7 @@ export function read_file_sync_safe(path: string): string {
 		writeFileSync(path, '');
 	return readFileSync(path).toString();
 }
+
+export function rand_range(min:number, max:number) {
+  return Math.random() * (max - min) + min;
+}
