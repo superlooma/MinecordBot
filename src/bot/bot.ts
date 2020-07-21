@@ -36,10 +36,10 @@ export class Bot {
 		});
 
 		this.discord.on('message', this.handle_discord_message.bind(this));
+		this.discord.on('ready', () => console.log('Bot is ready'))
 		this.minecraft.on('chat', (packet: ChatPacket) => {
 			this.random_move();
 			this.minecraft.write('position', {x: this.position.x, y: this.position.y, z:this.position.z, onGround: false});
-			console.log(JSON.stringify(packet))
 			let msg: ChatJSON = JSON.parse(packet.message);
 			if(!msg.extra) return;
 			if(msg.extra.length < 4) return;
@@ -86,7 +86,6 @@ export class Bot {
 	}
 
 	private async handle_minecraft_message(message: ChatPacket, sender_name: string) {
-		console.log(message.message);
 		if(!message.message.startsWith(this.minecraft_prefix))
 			return;
 		message.message = message.message.substring(1);
@@ -94,15 +93,10 @@ export class Bot {
 
 		let args = this.parse_arguments(message.message);
 		let cmd_name = args.shift();
-		console.log(args)
-		console.log(cmd_name);
 		
 		// TODO: handle empty messages properly
 		if(!cmd_name)
 			return;
-
-		// let sender_name = await this.get_minecraft_username(message.sender);
-		console.log(sender_name)
 
 		let ctx: CommandContext = {
 			source: 'Minecraft',
