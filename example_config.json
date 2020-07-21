@@ -1,0 +1,11 @@
+{
+    "discord_token": "token",
+    "default_prefix": "$",
+    "owner_name": "username",
+    "owner_discriminator": "discrim",
+    "minecraft_info": {
+        "username": "email",
+        "password": "password",
+        "host": "host"
+    }
+}
