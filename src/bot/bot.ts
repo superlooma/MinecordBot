@@ -47,8 +47,8 @@ export class Bot {
 			this.handle_minecraft_message(packet, msg.extra[msg.extra.length-3].text);
 		});
 
-		this.minecraft.on('position', (packet) => {
-			let pos_packet = JSON.parse(packet);
+		this.minecraft.on('position', (pos_packet) => {
+			// let pos_packet = JSON.parse(packet);
 			this.position.x = pos_packet.x;
 			this.position.y = pos_packet.y;
 			this.position.z = pos_packet.z;

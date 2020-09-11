@@ -9,6 +9,7 @@ let bot_instance = new Bot(config);
 
 // Load in all commands
 readdirSync(`${__dirname}/commands`).forEach((cmd_file) => {
+    console.log(`loading ${cmd_file}`);
     let cmd = require(`${__dirname}/commands/${cmd_file}`);
     bot_instance.add_command(new cmd.command());
 });
